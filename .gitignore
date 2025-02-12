@@ -1,3 +1,4 @@
+.DS_Store
 /build/
 /deps/
 /src/barebone/helpers/memory-scanner/target/

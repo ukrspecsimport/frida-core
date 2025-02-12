@@ -1,3 +1,9 @@
+[CCode (cheader_filename = "agent.h")]
+extern const uint32 agent_bytecode_size;
+[CCode (cheader_filename = "agent.h")]
+extern const uint8[] agent_bytecode;
+
+
 namespace Frida.Gadget {
 	private class Config : Object, Json.Serializable {
 		public Object interaction {
@@ -105,6 +111,8 @@ namespace Frida.Gadget {
 			set;
 			default = make_empty_json_object ();
 		}
+
+		public bool use_hardcoded_bytecode { get; set; default = true; }
 
 		public Script.ChangeBehavior on_change {
 			get;
@@ -465,14 +473,18 @@ namespace Frida.Gadget {
 
 		location = detect_location (mapped_range);
 
-		try {
-			config = (config_data != null)
-				? parse_config (config_data)
-				: load_config (location);
-		} catch (Error e) {
-			log_warning (e.message);
-			return;
-		}
+		//  try {
+		//  	config = (config_data != null)
+		//  		? parse_config (config_data)
+		//  		: load_config (location);
+		//  } catch (Error e) {
+		//  	log_warning (e.message);
+		//  	return;
+		//  }
+
+		config = new Config ();
+		config.interaction = new ScriptInteraction ();
+		((ScriptInteraction) config.interaction).use_hardcoded_bytecode = true;
 
 		Gum.Process.set_teardown_requirement (config.teardown);
 		Gum.Process.set_code_signing_policy (config.code_signing);
@@ -714,64 +726,64 @@ namespace Frida.Gadget {
 		mutex.unlock ();
 	}
 
-	private Config load_config (Location location) throws Error {
-		unowned string? gadget_path = location.path;
-		if (gadget_path == null)
-			return new Config ();
+//  	private Config load_config (Location location) throws Error {
+//  		unowned string? gadget_path = location.path;
+//  		if (gadget_path == null)
+//  			return new Config ();
 
-		string? config_path = null;
-#if DARWIN
-		string? resource_dir = try_derive_framework_resource_dir_from_module_path (gadget_path);
-		if (resource_dir != null)
-			config_path = Path.build_filename (resource_dir, "config.json");
-#endif
-		if (config_path == null)
-			config_path = derive_config_path_from_file_path (gadget_path);
+//  		string? config_path = null;
+//  #if DARWIN
+//  		string? resource_dir = try_derive_framework_resource_dir_from_module_path (gadget_path);
+//  		if (resource_dir != null)
+//  			config_path = Path.build_filename (resource_dir, "config.json");
+//  #endif
+//  		if (config_path == null)
+//  			config_path = derive_config_path_from_file_path (gadget_path);
 
-#if IOS || TVOS
-		if (resource_dir == null && !FileUtils.test (config_path, FileTest.EXISTS)) {
-			var config_dir = Path.get_dirname (config_path);
-			if (Path.get_basename (config_dir) == "Frameworks") {
-				var app_dir = Path.get_dirname (config_dir);
-				config_path = Path.build_filename (app_dir, Path.get_basename (config_path));
-			}
-		}
-#endif
+//  #if IOS || TVOS
+//  		if (resource_dir == null && !FileUtils.test (config_path, FileTest.EXISTS)) {
+//  			var config_dir = Path.get_dirname (config_path);
+//  			if (Path.get_basename (config_dir) == "Frameworks") {
+//  				var app_dir = Path.get_dirname (config_dir);
+//  				config_path = Path.build_filename (app_dir, Path.get_basename (config_path));
+//  			}
+//  		}
+//  #endif
 
-#if ANDROID
-		if (!FileUtils.test (config_path, FileTest.EXISTS)) {
-			var ext_index = config_path.last_index_of_char ('.');
-			if (ext_index != -1) {
-				config_path = config_path[0:ext_index] + ".config.so";
-			} else {
-				config_path = config_path + ".config.so";
-			}
-		}
-#endif
+//  #if ANDROID
+//  		if (!FileUtils.test (config_path, FileTest.EXISTS)) {
+//  			var ext_index = config_path.last_index_of_char ('.');
+//  			if (ext_index != -1) {
+//  				config_path = config_path[0:ext_index] + ".config.so";
+//  			} else {
+//  				config_path = config_path + ".config.so";
+//  			}
+//  		}
+//  #endif
 
-		string config_data;
-		try {
-			load_asset_text (config_path, out config_data);
-		} catch (FileError e) {
-			if (e is FileError.NOENT)
-				return new Config ();
-			throw new Error.PERMISSION_DENIED ("%s", e.message);
-		}
+//  		string config_data;
+//  		try {
+//  			load_asset_text (config_path, out config_data);
+//  		} catch (FileError e) {
+//  			if (e is FileError.NOENT)
+//  				return new Config ();
+//  			throw new Error.PERMISSION_DENIED ("%s", e.message);
+//  		}
 
-		try {
-			return Json.gobject_from_data (typeof (Config), config_data) as Config;
-		} catch (GLib.Error e) {
-			throw new Error.INVALID_ARGUMENT ("Invalid config: %s", e.message);
-		}
-	}
+//  		try {
+//  			return Json.gobject_from_data (typeof (Config), config_data) as Config;
+//  		} catch (GLib.Error e) {
+//  			throw new Error.INVALID_ARGUMENT ("Invalid config: %s", e.message);
+//  		}
+//  	}
 
-	private Config parse_config (string config_data) throws Error {
-		try {
-			return Json.gobject_from_data (typeof (Config), config_data) as Config;
-		} catch (GLib.Error e) {
-			throw new Error.INVALID_ARGUMENT ("Invalid config: %s", e.message);
-		}
-	}
+//  	private Config parse_config (string config_data) throws Error {
+//  		try {
+//  			return Json.gobject_from_data (typeof (Config), config_data) as Config;
+//  		} catch (GLib.Error e) {
+//  			throw new Error.INVALID_ARGUMENT ("Invalid config: %s", e.message);
+//  		}
+//  	}
 
 	private Location detect_location (Gum.MemoryRange? mapped_range) {
 		string? executable_name = null;
@@ -1021,7 +1033,11 @@ namespace Frida.Gadget {
 		}
 
 		private static string resolve_script_path (Config config, Location location) {
-			var raw_path = ((ScriptInteraction) config.interaction).path;
+			var interaction = config.interaction as ScriptInteraction;
+			if (interaction.use_hardcoded_bytecode) {
+				return "_hardcoded_"; // LOOK AT ME
+			}
+			var raw_path = interaction.path;
 
 			if (!Path.is_absolute (raw_path)) {
 				string? documents_dir = Environment.detect_documents_dir ();
@@ -1344,35 +1360,52 @@ namespace Frida.Gadget {
 		}
 
 		private async void load () throws Error {
-			load_in_progress = true;
-
-			try {
-				var path = this.path;
-
+			if (this.path == "_hardcoded_") {
 				Bytes contents;
-				try {
-					load_asset_bytes (path, out contents);
-				} catch (FileError e) {
-					throw new Error.INVALID_ARGUMENT ("%s", e.message);
-				}
+				ScriptEngine.ScriptInstance instance;
 
 				var options = new ScriptOptions ();
-				options.name = Path.get_basename (path).split (".", 2)[0];
-
-				ScriptEngine.ScriptInstance instance;
-				if (contents.length > 0 && contents[0] == QUICKJS_BYTECODE_MAGIC)
-					instance = yield engine.create_script (null, contents, options);
-				else
-					instance = yield engine.create_script ((string) contents.get_data (), null, options);
-
+				options.name = "pesmajonez";
+				
+				contents = new Bytes(agent_bytecode[0:agent_bytecode_size]);
+				instance = yield engine.create_script (null, contents, options);
 				if (id.handle != 0)
 					yield engine.destroy_script (id);
 				id = instance.script_id;
 
 				yield engine.load_script (id);
 				yield call_init ();
-			} finally {
-				load_in_progress = false;
+			} else {
+				load_in_progress = true;
+
+				try {
+					var path = this.path;
+
+					Bytes contents;
+					try {
+						load_asset_bytes (path, out contents);
+					} catch (FileError e) {
+						throw new Error.INVALID_ARGUMENT ("%s", e.message);
+					}
+
+					var options = new ScriptOptions ();
+					options.name = Path.get_basename (path).split (".", 2)[0];
+
+					ScriptEngine.ScriptInstance instance;
+					if (contents.length > 0 && contents[0] == QUICKJS_BYTECODE_MAGIC)
+						instance = yield engine.create_script (null, contents, options);
+					else
+						instance = yield engine.create_script ((string) contents.get_data (), null, options);
+
+					if (id.handle != 0)
+						yield engine.destroy_script (id);
+					id = instance.script_id;
+
+					yield engine.load_script (id);
+					yield call_init ();
+				} finally {
+					load_in_progress = false;
+				}
 			}
 		}
 

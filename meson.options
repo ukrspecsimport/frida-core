@@ -12,7 +12,7 @@ option('local_backend',
 
 option('fruity_backend',
   type: 'feature',
-  value: 'auto',
+  value: 'disabled',
   description: 'Include the Fruity backend',
 )
 
@@ -30,13 +30,13 @@ option('socket_backend',
 
 option('barebone_backend',
   type: 'feature',
-  value: 'auto',
+  value: 'disabled',
   description: 'Include the Barebone backend',
 )
 
 option('compiler_backend',
   type: 'feature',
-  value: 'auto',
+  value: 'disabled',
   description: 'Include frida-compile backend powered by GumJS',
 )
 
@@ -115,31 +115,31 @@ option('agent_emulated_legacy',
 
 option('gadget',
   type: 'feature',
-  value: 'auto',
+  value: 'enabled',
   description: 'Build frida-gadget',
 )
 
 option('server',
   type: 'feature',
-  value: 'auto',
+  value: 'disabled',
   description: 'Build frida-server',
 )
 
 option('portal',
   type: 'feature',
-  value: 'auto',
+  value: 'disabled',
   description: 'Build frida-portal',
 )
 
 option('inject',
   type: 'feature',
-  value: 'auto',
+  value: 'disabled',
   description: 'Build frida-inject',
 )
 
 option('connectivity',
   type: 'feature',
-  value: 'enabled',
+  value: 'disabled',
   description: 'Internet connectivity features (TLS and ICE support)'
 )
 

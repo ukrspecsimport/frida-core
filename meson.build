@@ -276,10 +276,17 @@ if get_option('b_sanitize') == 'address'
   cdata.set('HAVE_ASAN', 1)
 endif
 
-gum_dep = dependency('frida-gum-1.0', default_options: [
+gum_options = [
   f'frida_version=@frida_version@',
   'gumjs=enabled',
-])
+  'quickjs=enabled',
+  'v8=disabled',
+  'frida_objc_bridge=disabled',
+  'frida_swift_bridge=disabled',
+  'frida_java_bridge=enabled',
+]
+
+gum_dep = dependency('frida-gum-1.0', default_options: gum_options)
 gumjs_dep = dependency('frida-gumjs-1.0')
 gumjs_inspector_dep = dependency('frida-gumjs-inspector-1.0')
 

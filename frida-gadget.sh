@@ -24,11 +24,13 @@ handle_error() {
     exit 1
 }
 
+
+# Define Docker image name and Dockerfile path
+DOCKER_IMAGE="frida-core-builder"
+DOCKERFILE_PATH="./Dockerfile"  # Adjust this path if your Dockerfile is located elsewhere
+
 # Function to check and build Docker image
 check_and_build_docker_image() {
-    # Define Docker image name and Dockerfile path
-    DOCKER_IMAGE="frida-core-builder"
-    DOCKERFILE_PATH="./Dockerfile"  # Adjust this path if your Dockerfile is located elsewhere
 
     # Check if the Docker image exists, build it if it doesn't
     if ! docker image inspect "$DOCKER_IMAGE" &> /dev/null; then
@@ -80,10 +82,13 @@ case "$command" in
             handle_error "The specified agent.c file does not exist: $agent_file"
         fi
 
-        # Check if the output directory exists
-        output_dir=$(dirname "$output_file")
-        if [ ! -d "$output_dir" ]; then
-            handle_error "The output directory does not exist: $output_dir"
+        # Check if the output file exists, create it if it doesn't
+        if [ ! -f "$output_file" ]; then
+            echo "Output file does not exist. Creating an empty file: $output_file"
+            touch "$output_file"
+            if [ $? -ne 0 ]; then
+                handle_error "Failed to create the output file: $output_file"
+            fi
         fi
 
         # Ensure Docker image is built
@@ -91,7 +96,7 @@ case "$command" in
 
         # Run the Docker command
         echo "Building Frida gadget..."
-        if docker run -v "$output_file:/frida-core/build/lib/gadget/frida-gadget.so" -v "$agent_file:/frida-core/lib/gadget/agent.c" "frida-core-builder"; then
+        if docker run -v "$output_file:/frida-core/build/lib/gadget/frida-gadget.so" -v "$agent_file:/frida-core/lib/gadget/agent.c" "$DOCKER_IMAGE"; then
             echo "Build completed successfully."
             echo "Output file: $output_file"
         else

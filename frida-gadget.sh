@@ -26,8 +26,9 @@ handle_error() {
 
 
 # Define Docker image name and Dockerfile path
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 DOCKER_IMAGE="frida-core-builder"
-DOCKERFILE_PATH="./Dockerfile"  # Adjust this path if your Dockerfile is located elsewhere
+DOCKERFILE_PATH=$(realpath "$SCRIPT_DIR/Dockerfile")
 
 # Function to check and build Docker image
 check_and_build_docker_image() {

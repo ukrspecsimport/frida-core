@@ -42,24 +42,14 @@ check_and_build_docker_image() {
         fi
         
         # Build the Docker image
-        echo "Building Docker image from $SCRIPT_DIR"
-        
-        # Store the current directory
-        local current_dir=$(pwd)
-        
-        # Change to the script directory
-        cd "$SCRIPT_DIR"
+        echo "Building Docker image from $SCRIPT_DIR"    
         
         # Build the Docker image
-        if docker build --platform linux/amd64 -t "$DOCKER_IMAGE" -f "$DOCKERFILE_PATH" .; then
+        if docker build --platform linux/amd64 -t "$DOCKER_IMAGE" -f "$DOCKERFILE_PATH" $SCRIPT_DIR; then
             echo "Docker image '$DOCKER_IMAGE' built successfully."
         else
-            cd "$current_dir"  # Ensure we change back even if there's an error
             handle_error "Failed to build Docker image '$DOCKER_IMAGE'."
         fi
-        
-        # Change back to the original directory
-        cd "$current_dir"
     else
         echo "Docker image '$DOCKER_IMAGE' found."
     fi
